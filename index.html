@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>แผนกเภสัชกรรม · รพร.เดชอุดม</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body class="admin-body">
+  <header class="mobile-topbar">
+    <button class="mobile-topbar__btn" id="drawerToggle" aria-label="เปิดเมนู">☰</button>
+    <img class="mobile-topbar__logo" src="assets/images/logo.png" alt="" />
+    <span class="mobile-topbar__title">แผนกเภสัชกรรม</span>
+  </header>
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar__brand">
+      <img class="admin-sidebar__logo" src="assets/images/logo.png" alt="ตราโรงพยาบาลสมเด็จพระยุพราชเดชอุดม" />
+      <div class="admin-sidebar__brandtext">
+        <span class="admin-sidebar__name">แผนกเภสัชกรรม</span>
+        <span class="admin-sidebar__org">โรงพยาบาลสมเด็จพระยุพราชเดชอุดม</span>
+      </div>
+    </div>
+    <nav class="admin-nav">
+      <button class="admin-nav__item is-active" data-view="home"><span class="admin-nav__ico">📱</span><span class="admin-nav__txt">แอปพลิเคชัน</span></button>
+      <button class="admin-nav__item" data-view="docs"><span class="admin-nav__ico">🗄️</span><span class="admin-nav__txt">ฐานข้อมูล & ระบบ</span></button>
+      <div id="manageNav" hidden>
+        <div class="admin-nav__label">ผู้ดูแลระบบ</div>
+        <button class="admin-nav__item" data-view="manage"><span class="admin-nav__ico">🛠</span><span class="admin-nav__txt">จัดการ</span></button>
+        <button class="admin-nav__item" data-view="settings"><span class="admin-nav__ico">⚙️</span><span class="admin-nav__txt">ตั้งค่า</span></button>
+      </div>
+    </nav>
+    <div class="admin-sidebar__foot">
+      <div id="authArea"></div>
+    </div>
+  </aside>
+
+  <main class="admin-content">
+    <div id="statusBar" class="hub-status admin-statusbar" hidden></div>
+    <div id="backendWarn" class="admin-banner" hidden>
+      ⚠️ ยังไม่ได้ตั้งค่า <code>APPS_SCRIPT_URL</code> — การแก้ไขจะ <b>ยังไม่บันทึกขึ้น Google Sheet</b>
+      (ดู <code>apps-script/SETUP.md</code>) · ตอนนี้แสดงข้อมูลตั้งต้น
+    </div>
+
+    <div class="admin-bar">
+      <div class="admin-bar__head">
+        <h1 id="viewTitle" class="admin-bar__title">แอปพลิเคชัน</h1>
+        <span id="viewCount" class="admin-count">—</span>
+      </div>
+      <div class="admin-bar__tools">
+        <div class="hub-search admin-search" id="searchWrap">
+          <span class="hub-search__icon">🔍</span>
+          <input id="searchInput" type="search" class="hub-search__input"
+                 placeholder="ค้นหาแอพ… (ชื่อ / คำอธิบาย / แท็ก)" autocomplete="off" />
+        </div>
+        <button id="refreshBtn" class="btn btn--sm" title="โหลดรายการใหม่">⟳</button>
+      </div>
+    </div>
+
+    <!-- หน้าแรก: launcher แอพ (คลิกเปิด) -->
+    <section id="viewHome" class="admin-view">
+      <div id="grid" aria-live="polite"></div>
+      <div class="hub-footer"><span id="footerMeta">กำลังโหลด…</span></div>
+    </section>
+
+    <!-- เอกสารสำคัญ: launcher เอกสาร (คลิกเปิด · ดูอย่างเดียว) -->
+    <section id="viewDocs" class="admin-view" hidden>
+      <div id="docsLauncher" aria-live="polite"></div>
+    </section>
+
+    <!-- จัดการ: แก้ไขทั้งแอพ + เอกสาร ที่เดียว -->
+    <section id="viewManage" class="admin-view" hidden>
+      <div class="manage-section">
+        <div class="manage-section__head">
+          <h2 class="manage-section__title">📱 แอปพลิเคชัน <span id="appCount" class="manage-section__count"></span></h2>
+          <button id="addAppBtn" class="btn btn--primary btn--sm">➕ เพิ่มแอพ</button>
+        </div>
+        <div id="appList" class="item-list"></div>
+        <div id="appEmpty" class="hub-empty" hidden>ยังไม่มีแอพ</div>
+      </div>
+
+      <div class="manage-section">
+        <div class="manage-section__head">
+          <h2 class="manage-section__title">🗄️ ฐานข้อมูล & ระบบ <span id="docCount" class="manage-section__count"></span></h2>
+          <button id="addDocBtn" class="btn btn--primary btn--sm">➕ เพิ่มลิงก์</button>
+        </div>
+        <div id="docsSection"></div>
+      </div>
+
+      <div class="manage-section">
+        <div class="manage-section__head">
+          <h2 class="manage-section__title">🏷️ หมวดหมู่แอป <span id="catCount" class="manage-section__count"></span></h2>
+          <button id="addCatBtn" class="btn btn--primary btn--sm">➕ เพิ่มหมวด</button>
+        </div>
+        <div id="catList" class="item-list"></div>
+        <div id="catEmpty" class="hub-empty" hidden>ยังไม่มีหมวดหมู่</div>
+      </div>
+    </section>
+
+    <!-- ตั้งค่า -->
+    <section id="viewSettings" class="admin-view" hidden>
+      <div id="settingsBox"></div>
+    </section>
+
+    <!-- ตัวเปิดแอพ (iframe · sidebar อยู่ตลอด) -->
+    <section id="viewApp" class="admin-view" hidden>
+      <div class="app-toolbar">
+        <button class="app-toolbar__back" id="appBack" title="ย้อนกลับ">←</button>
+        <span class="app-toolbar__icon" id="appIcon">📦</span>
+        <span class="app-toolbar__name" id="appName">แอพ</span>
+        <span class="app-toolbar__spacer"></span>
+        <button class="app-toolbar__btn" id="appReload" title="โหลดใหม่">⟳</button>
+        <a class="app-toolbar__btn" id="appOpenNew" target="_blank" rel="noopener" title="เปิดในแท็บใหม่">↗</a>
+      </div>
+      <iframe id="appFrame" title="แอพ" src="about:blank"></iframe>
+    </section>
+  </main>
+
+  <!-- Modal: แอพ -->
+  <div id="appModal" class="modal-backdrop" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="appModalTitle">
+      <div class="modal__head">
+        <span>🧩</span><h2 id="appModalTitle">เพิ่มแอพ</h2>
+        <button type="button" class="modal__close" data-close aria-label="ปิด">✕</button>
+      </div>
+      <form id="appForm" class="modal__body">
+        <div class="form-grid">
+          <label class="field">
+            <span class="field__label">รหัส (id)</span>
+            <input name="id" class="field__input" placeholder="เช่น had" required />
+            <span class="field__hint">ห้ามซ้ำ · a-z, 0-9, ขีด</span>
+          </label>
+          <label class="field">
+            <span class="field__label">ไอคอน (อิโมจิ)</span>
+            <input name="icon" class="field__input" placeholder="💊" maxlength="4" />
+          </label>
+          <label class="field field--full">
+            <span class="field__label">ชื่อแอพ</span>
+            <input name="name" class="field__input" required />
+          </label>
+          <label class="field field--full">
+            <span class="field__label">คำอธิบาย</span>
+            <textarea name="desc" class="field__area"></textarea>
+          </label>
+          <label class="field field--full">
+            <span class="field__label">ลิงก์ (path)</span>
+            <input name="path" class="field__input" placeholder="../HADCalculator/index.html หรือ https://…" />
+          </label>
+          <label class="field">
+            <span class="field__label">หมวด</span>
+            <select name="category" class="field__select" id="catSelect"></select>
+          </label>
+          <label class="field">
+            <span class="field__label">สถานะ</span>
+            <select name="status" class="field__select">
+              <option value="active">ใช้งาน (active)</option>
+              <option value="beta">ทดสอบ (beta)</option>
+              <option value="soon">เร็ว ๆ นี้ (soon)</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field__label">แท็ก</span>
+            <input name="tags" class="field__input" placeholder="dose, iv, infusion" />
+          </label>
+          <label class="field">
+            <span class="field__label">ลำดับ</span>
+            <input name="order" type="number" class="field__input" value="999" min="1" />
+          </label>
+        </div>
+        <p id="appFormError" class="form-error" hidden></p>
+        <div class="modal__foot">
+          <button type="button" class="btn btn--ghost" data-close>ยกเลิก</button>
+          <button type="submit" class="btn btn--primary" id="appSave">บันทึก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: หมวดหมู่ -->
+  <div id="catModal" class="modal-backdrop" hidden>
+    <div class="modal modal--sm" role="dialog" aria-modal="true" aria-labelledby="catModalTitle">
+      <div class="modal__head">
+        <span>🏷️</span><h2 id="catModalTitle">เพิ่มหมวด</h2>
+        <button type="button" class="modal__close" data-close aria-label="ปิด">✕</button>
+      </div>
+      <form id="catForm" class="modal__body">
+        <label class="field">
+          <span class="field__label">ชื่อหมวด</span>
+          <input name="name" class="field__input" placeholder="เช่น คำนวณขนาดยา" required />
+        </label>
+        <label class="field">
+          <span class="field__label">ไอคอน (อิโมจิ)</span>
+          <input name="icon" class="field__input" placeholder="📦" maxlength="4" />
+        </label>
+        <label class="field">
+          <span class="field__label">ลำดับ</span>
+          <input name="order" type="number" class="field__input" value="999" min="1" />
+        </label>
+        <p id="catFormError" class="form-error" hidden></p>
+        <div class="modal__foot">
+          <button type="button" class="btn btn--ghost" data-close>ยกเลิก</button>
+          <button type="submit" class="btn btn--primary" id="catSave">บันทึก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/state-manager.js"></script>
+  <script src="js/ui-handler.js"></script>
+  <script src="js/docs.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
