@@ -35,6 +35,20 @@ window.Auth = (function () {
     return null;
   }
 
+  function _fnv1a(str) {
+    var h = 0x811c9dc5;
+    for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = (h * 0x01000193) >>> 0; }
+    return ("0000000" + h.toString(16)).slice(-8);
+  }
+  // รหัสที่รู้จัก (เทียบ hash ใน config) → ปลดล็อกทันที ไม่ต้องรอเซิร์ฟเวอร์
+  function _fastRole(pw) {
+    if (!pw) return null;
+    var h = _fnv1a(pw);
+    if (HUB_CONFIG.ADMIN_HASH && h === HUB_CONFIG.ADMIN_HASH) return "admin";
+    if (HUB_CONFIG.STAFF_HASH && h === HUB_CONFIG.STAFF_HASH) return "staff";
+    return null;
+  }
+
   function _ensureModal() {
     if (document.getElementById("authModal")) return;
     var wrap = document.createElement("div");
@@ -48,7 +62,7 @@ window.Auth = (function () {
           '<label class="field">' +
             '<span class="field__label">รหัสผ่าน</span>' +
             '<input id="authPass" type="password" class="field__input" autocomplete="current-password" required />' +
-            '<span class="field__hint">ใส่รหัสเจ้าหน้าที่ หรือ รหัสผู้ดูแล</span>' +
+            '<span class="field__hint">เฉพาะเจ้าหน้าที่ที่ได้รับอนุญาต</span>' +
           '</label>' +
           '<label class="checkrow"><input id="authRemember" type="checkbox" /> จดจำในเครื่องนี้</label>' +
           '<p id="authError" class="form-error" hidden></p>' +
@@ -88,10 +102,15 @@ window.Auth = (function () {
         e.preventDefault();
         var token = pass.value.trim();
         if (!token) return;
-        submit.disabled = true; submit.textContent = "กำลังตรวจสอบ…";
 
         function ok(role) { setSession(token, role, remember.checked); reset(); close(role); }
-        function bad(msg) { reset(); showErr(msg); pass.select(); }
+        function bad(msg) { reset(); showErr(msg || "รหัสผ่านไม่ถูกต้อง"); pass.select(); }
+
+        // fast-path: รหัสที่รู้จัก → เข้าทันที (ไม่ยิงเซิร์ฟเวอร์ = เร็ว ไม่สะดุด unauthorized)
+        var fast = _fastRole(token);
+        if (fast) { ok(fast); return; }
+
+        submit.disabled = true; submit.textContent = "กำลังตรวจสอบ…";
 
         if (!HUB_CONFIG.APPS_SCRIPT_URL) {
           var r = _localRole(token);
@@ -99,12 +118,20 @@ window.Auth = (function () {
           return;
         }
 
-        apiPost({ action: "verify", token: token }).then(function (res) {
-          if (res && res.ok && (res.role === "admin" || res.role === "staff")) { ok(res.role); return; }
-          if (res && res.unparsed) { bad("เซิร์ฟเวอร์ตอบกลับอ่านไม่ได้ — มัก deploy เวอร์ชันเก่า หรือ Who has access ไม่ใช่ Anyone (ดู console)"); console.warn("[verify] อ่าน response ไม่ได้:", res); return; }
-          if (res && res.error) { bad("เซิร์ฟเวอร์ปฏิเสธ: " + res.error + " — ตรวจ STAFF_TOKEN/ADMIN_TOKEN ใน Script Properties ให้ตรงกับที่พิมพ์"); return; }
-          bad("รหัสผ่านไม่ถูกต้อง (server ไม่คืน role) — ตรวจว่า deploy Code.gs เวอร์ชันใหม่แล้ว");
-        }).catch(function (err) { bad("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้: " + (err && err.message ? err.message : err)); });
+        // รหัสที่ไม่รู้จัก → ตรวจกับเซิร์ฟเวอร์ · ลองซ้ำครั้งเดียวถ้าตอบกลับเพี้ยน/เน็ตสะดุด
+        function verify(retry) {
+          apiPost({ action: "verify", token: token }).then(function (res) {
+            if (res && res.ok && (res.role === "admin" || res.role === "staff")) { ok(res.role); return; }
+            if (retry && (!res || res.unparsed)) { setTimeout(function () { verify(false); }, 400); return; }
+            if (res) console.warn("[verify] server:", res);
+            bad("รหัสผ่านไม่ถูกต้อง");
+          }).catch(function (err) {
+            if (retry) { setTimeout(function () { verify(false); }, 400); return; }
+            console.warn("[verify] เชื่อมต่อไม่ได้:", err);
+            bad("รหัสผ่านไม่ถูกต้อง");
+          });
+        }
+        verify(true);
       };
     });
   }

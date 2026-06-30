@@ -64,7 +64,8 @@
         if ((v === "manage" || v === "settings") && !Auth.isAdmin()) {
           Auth.promptLogin().then(function (role) {
             renderAuth();
-            if (role === "admin") setView(v);   // staff login ก็ยังเข้าจัดการไม่ได้
+            if (role !== "guest") refresh(true);  // โหลดรายการที่ซ่อนตามสิทธิ์ใหม่
+            if (role === "admin") setView(v);      // staff login ก็ยังเข้าจัดการไม่ได้
           });
           return;
         }
@@ -223,7 +224,7 @@
       })
       .catch(function (err) {
         alert(err.message === "no-url"
-          ? "ยังไม่ได้ตั้ง APPS_SCRIPT_URL — เปลี่ยนสถานะบนชีทไม่ได้"
+          ? "ยังไม่ได้เชื่อมต่อระบบ — เปลี่ยนสถานะไม่ได้"
           : "เปลี่ยนสถานะไม่สำเร็จ: " + err.message);
       });
   }
@@ -304,7 +305,7 @@
       .catch(function (err) {
         setBusy(btn, false);
         catErr(err.message === "no-url"
-          ? "ยังไม่ได้ตั้ง APPS_SCRIPT_URL — บันทึกขึ้นชีทไม่ได้"
+          ? "ยังไม่ได้เชื่อมต่อระบบ — บันทึกไม่ได้"
           : "บันทึกไม่สำเร็จ: " + err.message);
       });
   }
@@ -324,7 +325,7 @@
       })
       .catch(function (err) {
         alert(err.message === "no-url"
-          ? "ยังไม่ได้ตั้ง APPS_SCRIPT_URL — ลบบนชีทไม่ได้"
+          ? "ยังไม่ได้เชื่อมต่อระบบ — ลบไม่ได้"
           : "ลบไม่สำเร็จ: " + err.message);
       });
   }
@@ -373,15 +374,13 @@
     els.count.textContent = "";
     var url = HUB_CONFIG.APPS_SCRIPT_URL;
     var conn = url ? '<span class="badge-ok">● เชื่อมต่อแล้ว</span>'
-                   : '<span class="badge-bad">● ยังไม่ได้ตั้งค่า</span>';
-    var urlShort = url ? escapeHtml(url.length > 48 ? url.slice(0, 48) + "…" : url) : "—";
-    var src = { online: "Google Sheet", cache: "แคช (offline)", seed: "ข้อมูลตั้งต้น" };
+                   : '<span class="badge-bad">● ยังไม่ได้เชื่อมต่อ</span>';
+    var src = { online: "ออนไลน์", cache: "แคช (offline)", seed: "ข้อมูลตั้งต้น" };
 
     els.settingsBox.innerHTML =
-      '<div class="settings-card"><h3>การเชื่อมต่อ Google Sheet</h3>' +
-        '<div class="settings-row"><span class="settings-label">สถานะ</span><span class="settings-value">' + conn + "</span></div>" +
+      '<div class="settings-card"><h3>สถานะระบบ</h3>' +
+        '<div class="settings-row"><span class="settings-label">การเชื่อมต่อ</span><span class="settings-value">' + conn + "</span></div>" +
         '<div class="settings-row"><span class="settings-label">แหล่งข้อมูลล่าสุด</span><span class="settings-value">' + (src[HubState.source] || HubState.source) + "</span></div>" +
-        '<div class="settings-row"><span class="settings-label">APPS_SCRIPT_URL</span><span class="settings-value">' + urlShort + "</span></div>" +
       "</div>" +
       '<div class="settings-card"><h3>ข้อมูลในระบบ</h3>' +
         '<div class="settings-row"><span class="settings-label">จำนวนแอพ</span><span class="settings-value">' + HubState.apps.length + "</span></div>" +
@@ -390,8 +389,7 @@
       "</div>" +
       '<div class="settings-card"><h3>วิธีแก้ไข</h3>' +
         '<p class="settings-row settings-hint" style="border:0;">' +
-          "เพิ่ม/แก้แอป + ฐานข้อมูล/ระบบ ได้จากเมนู “จัดการ” · " +
-          "หรือแก้แถวใน Google Sheet ตรง ๆ · เพิ่มหมวดที่ <code>js/config.js</code> · คู่มือ <code>apps-script/SETUP.md</code>" +
+          "เพิ่ม/แก้แอป ฐานข้อมูล และหมวดหมู่ ได้จากเมนู “จัดการ”" +
         "</p></div>";
   }
 
@@ -450,7 +448,7 @@
       .catch(function (err) {
         setBusy(btn, false);
         formErr(err.message === "no-url"
-          ? "ยังไม่ได้ตั้ง APPS_SCRIPT_URL — บันทึกขึ้นชีทไม่ได้"
+          ? "ยังไม่ได้เชื่อมต่อระบบ — บันทึกไม่ได้"
           : "บันทึกไม่สำเร็จ: " + err.message);
       });
   }
@@ -468,7 +466,7 @@
       })
       .catch(function (err) {
         alert(err.message === "no-url"
-          ? "ยังไม่ได้ตั้ง APPS_SCRIPT_URL — ลบบนชีทไม่ได้"
+          ? "ยังไม่ได้เชื่อมต่อระบบ — ลบไม่ได้"
           : "ลบไม่สำเร็จ: " + err.message);
       });
   }
@@ -488,16 +486,16 @@
       document.getElementById("logoutBtn").onclick = function () {
         closeDrawer();
         Auth.clear(); renderAuth();
-        // กลับหน้าแรกถ้าอยู่หน้าเฉพาะ admin ไม่งั้นรีเฟรชมุมมองให้กรองตามสิทธิ์ใหม่
+        // กลับหน้าแรกถ้าอยู่หน้าเฉพาะ admin · โหลดใหม่ให้เหลือเฉพาะสาธารณะ (ทิ้งรายการที่ซ่อน)
         if (state.view === "manage" || state.view === "settings") setView("home");
-        else renderActive();
+        refresh(true);
       };
     } else {
       els.authArea.innerHTML =
         '<button class="admin-nav__item" id="loginBtn"><span class="admin-nav__ico">🔒</span><span class="admin-nav__txt">เข้าสู่ระบบ</span></button>';
       document.getElementById("loginBtn").onclick = function () {
         closeDrawer();
-        Auth.promptLogin().then(function (r) { if (r) { renderAuth(); renderActive(); } });
+        Auth.promptLogin().then(function (r) { if (r) { renderAuth(); refresh(true); } });
       };
     }
   }

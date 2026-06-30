@@ -8,6 +8,11 @@ window.HUB_CONFIG = {
   // รหัสทดสอบเฉพาะโหมด local (ยังไม่ได้ตั้ง APPS_SCRIPT_URL) — ของจริงตรวจที่ Apps Script (STAFF_TOKEN/ADMIN_TOKEN)
   LOCAL_STAFF_PW: "staff",
   LOCAL_ADMIN_PW: "admin",
+  // fast-path: hash (FNV-1a) ของรหัสจริง → login ทันที ไม่ต้องรอเซิร์ฟเวอร์ (กัน login ช้า/สะดุด)
+  // ตอนเขียนชีทยังส่ง token จริงไปตรวจฝั่ง server เหมือนเดิม · เก็บ hash แทน plaintext = รหัสไม่หลุดใน source
+  // เปลี่ยนรหัส → คำนวณ hash ใหม่: node -e "h=0x811c9dc5;s='รหัสใหม่';for(i=0;i<s.length;i++){h^=s.charCodeAt(i);h=(h*0x01000193)>>>0};console.log(('0000000'+h.toString(16)).slice(-8))"
+  ADMIN_HASH: "2a3506fc",
+  STAFF_HASH: "0c2453a8",
   CACHE_KEY: "pharmacyHub.registry.v1",
   CACHE_TTL_MS: 1000 * 60 * 30,           // ถือว่า cache สดภายใน 30 นาที
   OPEN_IN_NEW_TAB: true

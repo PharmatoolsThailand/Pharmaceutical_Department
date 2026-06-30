@@ -45,6 +45,8 @@ function renderGrid() {
 
   var visible = HubState.apps.filter(function (a) { return (showAll || a.public) && _matches(a, q); })
     .sort(function (a, b) {
+      var sa = a.status === "soon" ? 1 : 0, sb = b.status === "soon" ? 1 : 0;
+      if (sa !== sb) return sa - sb;                 // "เร็ว ๆ นี้" ลงท้ายสุดเสมอ ไม่แทรก active
       var ia = order.indexOf(a.category), ib = order.indexOf(b.category);
       ia = ia === -1 ? 99 : ia; ib = ib === -1 ? 99 : ib;
       return (ia - ib) || (a.order - b.order) || a.name.localeCompare(b.name, "th");

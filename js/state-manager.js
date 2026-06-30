@@ -60,7 +60,9 @@ function loadRegistry(opts, onUpdate) {
   // ถ้า cache สดและไม่ได้บังคับ → พอแล้ว
   if (fresh && !opts.force) return Promise.resolve({ source: "cache" });
 
-  return apiGet()
+  // login แล้ว → แนบ token เพื่อดึงรายการที่ซ่อนด้วย · ไม่งั้นได้เฉพาะสาธารณะ
+  var token = (window.Auth && Auth.getRole() !== "guest") ? Auth.getToken() : "";
+  return apiGet(token)
     .then(function (data) {
       var apps = pickList(data, "apps");
       var docs = pickList(data, "docs");

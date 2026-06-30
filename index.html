@@ -11,6 +11,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="stylesheet" href="css/admin.css" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0f766e" />
+  <link rel="icon" href="assets/images/logo-192.png" type="image/png" />
+  <link rel="apple-touch-icon" href="assets/images/logo-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="เภสัชกรรม รพร." />
 </head>
 <body class="admin-body">
   <header class="mobile-topbar">
@@ -38,6 +45,10 @@
       </div>
     </nav>
     <div class="admin-sidebar__foot">
+      <button id="installAppBtn" class="install-cta" hidden>
+        <span class="install-cta__ico">⬇️</span>
+        <span class="install-cta__txt"><strong>ติดตั้งแอป</strong><small>เพิ่มลงหน้าจอเครื่อง</small></span>
+      </button>
       <div id="authArea"></div>
     </div>
   </aside>
@@ -45,8 +56,7 @@
   <main class="admin-content">
     <div id="statusBar" class="hub-status admin-statusbar" hidden></div>
     <div id="backendWarn" class="admin-banner" hidden>
-      ⚠️ ยังไม่ได้ตั้งค่า <code>APPS_SCRIPT_URL</code> — การแก้ไขจะ <b>ยังไม่บันทึกขึ้น Google Sheet</b>
-      (ดู <code>apps-script/SETUP.md</code>) · ตอนนี้แสดงข้อมูลตั้งต้น
+      ⚠️ ยังไม่ได้เชื่อมต่อระบบ — การแก้ไขจะ <b>ยังไม่ถูกบันทึก</b> · ตอนนี้แสดงข้อมูลตั้งต้น
     </div>
 
     <div class="admin-bar">
@@ -220,5 +230,6 @@
   <script src="js/ui-handler.js"></script>
   <script src="js/docs.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/pwa.js"></script>
 </body>
 </html>
